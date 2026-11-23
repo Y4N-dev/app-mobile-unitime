@@ -57,6 +57,9 @@ class AppTheme {
   /// Azul um pouco mais claro: hover e toque dos botões azul escuro.
   static const Color blueHover = Color(0xff0055ab);
 
+  /// Azul um pouco mais escuro que o base: ícones de fundo dos botões grandes.
+  static const Color blueDark = Color(0xFF002A52);
+
   /// Espessura da linha amarela na base dos cabeçalhos.
   static const double headerLineWidth = 4;
 

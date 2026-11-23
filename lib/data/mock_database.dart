@@ -129,6 +129,9 @@ class MockDatabase extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Todos os alunos (usado para identificar nomes repetidos).
+  List<UserModel> get allUsers => List<UserModel>.unmodifiable(_users);
+
   // =====================================================================
   // VÍDEOS
   // =====================================================================

@@ -15,6 +15,7 @@
 // FUTURO: com o banco de dados online, o envio gravará o vídeo e a capa no
 // armazenamento online e guardará os endereços (URLs).
 
+import 'dart:async';
 import 'dart:io';
 import '../widgets/app_notice.dart';
 import 'package:flutter/foundation.dart';
@@ -54,6 +55,8 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   // Capa (opcional)
   PickedMedia? _cover;
   String? _coverError;
+  Size? _coverSize; // dimensões reais da capa escolhida (para o alerta)
+  int _coverToken = 0; // evita misturar leituras se o aluno trocar a capa
 
   bool _published = false;
 
@@ -170,19 +173,122 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
 
     final media = picked;
     final old = _cover;
+    final token = ++_coverToken;
     setState(() {
       _cover = media;
+      _coverSize = null;
       _coverError = null;
     });
     MediaPicker.release(old?.source);
+
+    // Lê as dimensões reais e atualiza o alerta (não bloqueia o envio).
+    _readImageSize(media.source).then((size) {
+      if (!mounted || token != _coverToken) return;
+      setState(() => _coverSize = size);
+    });
   }
 
   void _removeCover() {
     MediaPicker.release(_cover?.source);
+    _coverToken++;
     setState(() {
       _cover = null;
+      _coverSize = null;
       _coverError = null;
     });
+  }
+
+  /// Lê a largura e a altura reais da imagem (null se não conseguir).
+  Future<Size?> _readImageSize(String source) {
+    final completer = Completer<Size?>();
+    final ImageProvider<Object> provider;
+    if (source.startsWith('blob:') || source.startsWith('http')) {
+      provider = NetworkImage(source);
+    } else {
+      provider = FileImage(File(source));
+    }
+    final stream = provider.resolve(const ImageConfiguration());
+    late ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        if (!completer.isCompleted) {
+          completer.complete(Size(
+            info.image.width.toDouble(),
+            info.image.height.toDouble(),
+          ));
+        }
+        stream.removeListener(listener);
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        if (!completer.isCompleted) completer.complete(null);
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future;
+  }
+
+  /// Alerta sobre tamanho e proporção da capa. NÃO recusa a imagem: só avisa.
+  Widget? _coverAdvice() {
+    final size = _coverSize;
+    if (size == null) return null;
+
+    final theme = Theme.of(context);
+    final w = size.width.round();
+    final h = size.height.round();
+    final ratio = size.width / size.height;
+    const target = 16 / 9;
+    final sameRatio = (ratio - target).abs() / target <= 0.03;
+
+    final warnings = <String>[];
+    if (w < MediaLimits.minImageWidth || h < MediaLimits.minImageHeight) {
+      warnings.add('Imagem pequena ($w×$h): pode ficar sem nitidez. O mínimo '
+          'recomendado é ${MediaLimits.minImageWidth}×'
+          '${MediaLimits.minImageHeight}.');
+    }
+    if (!sameRatio) {
+      warnings.add(ratio > target
+          ? 'Sua imagem ($w×$h) é mais larga que 16:9: as laterais serão '
+              'cortadas e essa parte da imagem ficará de fora.'
+          : 'Sua imagem ($w×$h) é mais alta que 16:9: o topo e a base serão '
+              'cortados e essa parte da imagem ficará de fora.');
+    }
+
+    Widget line(IconData icon, Color color, String text) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 6),
+            Expanded(child: Text(text, style: theme.textTheme.bodySmall)),
+          ],
+        ),
+      );
+    }
+
+    if (warnings.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final text in warnings)
+            line(Icons.warning_amber_rounded, AppTheme.red, text),
+        ],
+      );
+    }
+    if (w > MediaLimits.recommendedImageWidth) {
+      return line(
+        Icons.info_outline,
+        AppTheme.gray,
+        'Sua imagem tem $w×$h. Ela será reduzida para caber na capa e '
+        'funciona normalmente, mas não precisa ser maior que '
+        '${MediaLimits.recommendedImageWidth}×'
+        '${MediaLimits.recommendedImageHeight}.',
+      );
+    }
+    return line(Icons.check_circle_outline, AppTheme.gray,
+        'Tamanho ótimo: $w×$h em 16:9.');
   }
 
   // =====================================================================
@@ -446,6 +552,7 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
   Widget _buildCoverSection() {
     final theme = Theme.of(context);
     final cover = _cover;
+    final advice = _coverAdvice();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +564,8 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
               'Ideal: ${MediaLimits.recommendedImageWidth}×'
               '${MediaLimits.recommendedImageHeight} '
               '(mínimo ${MediaLimits.minImageWidth}×'
-              '${MediaLimits.minImageHeight}).',
+              '${MediaLimits.minImageHeight}). '
+              'Imagens de outra proporção são recortadas no centro.',
         ),
         // Prévia: sem capa, mostra a imagem padrão.
         Container(
@@ -478,7 +586,12 @@ class _UploadVideoScreenState extends State<UploadVideoScreen> {
               : 'Capa: ${cover.name} (${MediaLimits.formatBytes(cover.sizeBytes)})',
           style: theme.textTheme.bodySmall,
         ),
+        if (advice != null) ...[
+          const SizedBox(height: 8),
+          advice,
+        ],
         const SizedBox(height: 8),
+
         Wrap(
           spacing: 8,
           children: [

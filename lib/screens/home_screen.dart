@@ -5,6 +5,7 @@
 // O feed vem pronto do MockDatabase.getFeed (destaques no topo, depois os
 // mais recentes). Esta tela só EXIBE: nenhuma regra de créditos aqui.
 
+import '../utils/author_handle.dart';
 import 'package:flutter/material.dart';
 import 'watch_screen.dart';
 import '../data/mock_database.dart';
@@ -302,6 +303,8 @@ class _VideoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final average = MockDatabase.instance.averageRating(video.id);
+    final handle = AuthorHandle.forRgm(video.authorRgm);
 
     return Container(
       decoration: BoxDecoration(
@@ -319,7 +322,7 @@ class _VideoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Thumbnail (espaço reservado enquanto não há vídeos reais).
+              // Thumbnail (imagem real ou o espaço reservado azul com a estrela).
               AspectRatio(
                 aspectRatio: 16 / 9,
                 child: VideoThumbnail(
@@ -344,8 +347,17 @@ class _VideoCard extends StatelessWidget {
                           color: AppTheme.black,
                         ),
                       ),
+                      const SizedBox(height: 2),
+                      // Autor: @ + 1º e 2º nome.
+                      Text(
+                        handle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall,
+                      ),
                       const Spacer(),
-                      // Curtidas (coração vermelho oco) e visualizações (cinza).
+                      // Curtidas (vermelho), visualizações (cinza) e média de
+                      // estrelas (amarela; cinza com "—" se ainda não há nota).
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
@@ -356,12 +368,29 @@ class _VideoCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(_compact(video.likes),
                                 style: theme.textTheme.bodySmall),
-                            const SizedBox(width: 14),
+                            const SizedBox(width: 12),
                             const Icon(Icons.visibility_outlined,
                                 size: 16, color: AppTheme.gray),
                             const SizedBox(width: 4),
                             Text(_compact(video.views),
                                 style: theme.textTheme.bodySmall),
+                            const SizedBox(width: 12),
+                            Icon(
+                              average == null ? Icons.star_border : Icons.star,
+                              size: 16,
+                              color: average == null
+                                  ? AppTheme.gray
+                                  : AppTheme.yellow,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              average == null
+                                  ? '—'
+                                  : average
+                                      .toStringAsFixed(1)
+                                      .replaceAll('.', ','),
+                              style: theme.textTheme.bodySmall,
+                            ),
                           ],
                         ),
                       ),

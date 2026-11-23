@@ -11,6 +11,7 @@
 // câmera no canto da foto abre o seletor de imagens (JPG/PNG, até 2 MB).
 // A foto fica só em memória (futuramente, no banco de dados).
 
+import '../widgets/app_dialog.dart';
 import '../widgets/app_notice.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -735,14 +736,9 @@ class _BioDialogState extends State<_BioDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppTheme.white,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: AppTheme.thinBlack,
-      ),
-      title: const Text('Biografia'),
+    return AppDialog(
+      icon: Icons.person_outline,
+      title: 'Biografia',
       content: TextField(
         controller: _controller,
         maxLength: 160,

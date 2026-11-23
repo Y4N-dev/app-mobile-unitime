@@ -18,6 +18,9 @@
 //
 // FUTURO: comentários, avaliações e curtidas passarão a ser gravados no
 // banco de dados online (a troca acontece só no mock_database.dart).
+
+import '../widgets/app_dialog.dart';
+import '../utils/author_handle.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -383,13 +386,10 @@ class _WatchScreenState extends State<WatchScreen> {
     final ready =
         controller != null && controller.value.isInitialized && !_playerFailed;
 
-    var aspect = 16 / 9;
-    if (ready && controller.value.aspectRatio > 0) {
-      aspect = controller.value.aspectRatio;
-    }
-
+    // Área SEMPRE em 16:9. O vídeo (vertical ou não) fica centralizado dentro
+    // dela, com faixas pretas, sem cortar nem esticar a imagem.
     return AspectRatio(
-      aspectRatio: aspect,
+      aspectRatio: 16 / 9,
       child: Container(
         color: AppTheme.black,
         child: ready ? _playerLayers(controller) : _playerPlaceholder(),
@@ -432,7 +432,16 @@ class _WatchScreenState extends State<WatchScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        VideoPlayer(controller),
+        // O vídeo na proporção dele, centralizado: se for vertical, sobram
+        // faixas pretas nas laterais.
+        Center(
+          child: AspectRatio(
+            aspectRatio: controller.value.aspectRatio > 0
+                ? controller.value.aspectRatio
+                : 16 / 9,
+            child: VideoPlayer(controller),
+          ),
+        ),
 
         // Toque em qualquer ponto: play / pause.
         GestureDetector(
@@ -516,7 +525,9 @@ class _WatchScreenState extends State<WatchScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Por $authorName • ${_formatDay(video.createdAt)}',
+            '${isOwner ? 'Por você' : 'Por $authorName'} • '
+            '${AuthorHandle.forRgm(video.authorRgm)} • '
+            '${_formatDay(video.createdAt)}',
             style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 8),
@@ -771,19 +782,9 @@ class _UnlockDialog extends StatelessWidget {
     final cost = video.creditCost;
     final enough = balance >= cost; // sem saldo suficiente: compra bloqueada
 
-    return AlertDialog(
-      backgroundColor: AppTheme.white,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: AppTheme.thinBlack,
-      ),
-      titleTextStyle: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.w600,
-        color: AppTheme.black,
-      ),
-      title: const Text('Quer realmente desbloquear este vídeo?'),
+    return AppDialog(
+      icon: Icons.lock_open,
+      title: 'Quer realmente desbloquear este vídeo?',
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -874,14 +875,9 @@ class _RatingDialogState extends State<_RatingDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppTheme.white,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: AppTheme.thinBlack,
-      ),
-      title: const Text('Avaliar vídeo'),
+    return AppDialog(
+      icon: Icons.star,
+      title: 'Avaliar vídeo',
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -970,14 +966,9 @@ class _ReportDialogState extends State<_ReportDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppTheme.white,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: AppTheme.thinBlack,
-      ),
-      title: const Text('Denunciar vídeo'),
+    return AppDialog(
+      icon: Icons.flag_outlined,
+      title: 'Denunciar vídeo',
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,

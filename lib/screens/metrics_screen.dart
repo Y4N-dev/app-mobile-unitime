@@ -13,7 +13,7 @@
 // preto, para manter a leitura) | penalidade = vermelho.
 
 import 'package:flutter/material.dart';
-
+import '../utils/author_handle.dart';
 import '../data/mock_database.dart';
 import '../models/credit_transaction_model.dart';
 import '../models/video_model.dart';
@@ -804,8 +804,7 @@ class _MetricsScreenState extends State<MetricsScreen> {
     );
   }
 
-  String _authorName(VideoModel video) =>
-      _db.getUserByRgm(video.authorRgm)?.fullName ?? 'autor desconhecido';
+  String _authorName(VideoModel video) => AuthorHandle.forRgm(video.authorRgm);
 }
 
 // =======================================================================

@@ -12,7 +12,7 @@
 // é feita aqui.
 
 import 'package:flutter/material.dart';
-
+import '../widgets/app_dialog.dart';
 import '../data/mock_database.dart';
 import '../models/credit_transaction_model.dart';
 import '../models/video_model.dart';
@@ -396,14 +396,9 @@ class _EditDialogState extends State<_EditDialog> {
       if (!MockDatabase.topics.contains(_topic)) _topic,
     ];
 
-    return AlertDialog(
-      backgroundColor: AppTheme.white,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: AppTheme.thinBlack,
-      ),
-      title: const Text('Editar vídeo'),
+    return AppDialog(
+      icon: Icons.edit_outlined,
+      title: 'Editar vídeo',
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -537,14 +532,10 @@ class _DeleteDialogState extends State<_DeleteDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return AlertDialog(
-      backgroundColor: AppTheme.white,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: AppTheme.thinBlack,
-      ),
-      title: const Text('Excluir vídeo?'),
+    return AppDialog(
+      icon: Icons.delete_outline,
+      title: 'Excluir vídeo?',
+      danger: true,
       content: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
